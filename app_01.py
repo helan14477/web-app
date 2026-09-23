@@ -1,1141 +1,1141 @@
-```python
-from flask import Flask, render_template_string, jsonify
-from datetime import datetime
-import os
-import platform
+# ```python
+# from flask import Flask, render_template_string, jsonify
+# from datetime import datetime
+# import os
+# import platform
 
-# ============================================================
-# APPLICATION CONFIGURATION
-# ============================================================
+# # ============================================================
+# # APPLICATION CONFIGURATION
+# # ============================================================
 
-GITHUB_REPO_URL = "https://github.com/your-username/your-repo-name"
+# GITHUB_REPO_URL = "https://github.com/your-username/your-repo-name"
 
-application = Flask(__name__)
+# application = Flask(__name__)
 
-APPLICATION_NAME = "DATAHUB_CORE"
+# APPLICATION_NAME = "DATAHUB_CORE"
 
-# Read AWS / Elastic Beanstalk environment variables
-AWS_REGION = os.environ.get("AWS_REGION", "ap-south-1")
-ENV_NAME = os.environ.get(
-    "AWS_EB_ENVIRONMENT_NAME",
-    "LOCAL_DEVELOPMENT"
-)
+# # Read AWS / Elastic Beanstalk environment variables
+# AWS_REGION = os.environ.get("AWS_REGION", "ap-south-1")
+# ENV_NAME = os.environ.get(
+#     "AWS_EB_ENVIRONMENT_NAME",
+#     "LOCAL_DEVELOPMENT"
+# )
 
-# Sample application metrics
-RECORDS_PROCESSED = 12540
-ETL_STATUS = "ACTIVE"
-DATA_SOURCE = "AMAZON S3"
-TARGET_SYSTEM = "AWS GLUE"
-LAST_RUN = "2026-09-23 10:45:32 UTC"
+# # Sample application metrics
+# RECORDS_PROCESSED = 12540
+# ETL_STATUS = "ACTIVE"
+# DATA_SOURCE = "AMAZON S3"
+# TARGET_SYSTEM = "AWS GLUE"
+# LAST_RUN = "2026-09-23 10:45:32 UTC"
 
 
-# ============================================================
-# HTML TEMPLATE
-# ============================================================
+# # ============================================================
+# # HTML TEMPLATE
+# # ============================================================
 
-HTML_TEMPLATE = """
-<!DOCTYPE html>
+# HTML_TEMPLATE = """
+# <!DOCTYPE html>
 
-<html lang="en">
+# <html lang="en">
 
-<head>
+# <head>
 
-    <meta charset="UTF-8">
+#     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+#     <meta name="viewport"
+#           content="width=device-width, initial-scale=1.0">
 
-    <title>
-        DATAHUB CORE | AWS Elastic Beanstalk
-    </title>
+#     <title>
+#         DATAHUB CORE | AWS Elastic Beanstalk
+#     </title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+#     <script src="https://cdn.tailwindcss.com"></script>
 
-    <script>
+#     <script>
 
-        function updateClock() {
+#         function updateClock() {
 
-            const now = new Date();
+#             const now = new Date();
 
-            document.getElementById(
-                'server-time'
-            ).textContent =
-                now.toISOString()
-                   .replace('T', ' ')
-                   .substring(0, 19)
-                   + ' UTC';
-        }
+#             document.getElementById(
+#                 'server-time'
+#             ).textContent =
+#                 now.toISOString()
+#                    .replace('T', ' ')
+#                    .substring(0, 19)
+#                    + ' UTC';
+#         }
 
-        setInterval(updateClock, 1000);
+#         setInterval(updateClock, 1000);
 
-        window.onload = updateClock;
+#         window.onload = updateClock;
 
-    </script>
+#     </script>
 
 
-    <style>
+#     <style>
 
-        @import url(
-            'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap'
-        );
+#         @import url(
+#             'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap'
+#         );
 
 
-        body {
+#         body {
 
-            font-family:
-                'Share Tech Mono',
-                monospace;
+#             font-family:
+#                 'Share Tech Mono',
+#                 monospace;
 
-        }
+#         }
 
 
-        .scanlines::before {
+#         .scanlines::before {
 
-            content: "";
+#             content: "";
 
-            position: fixed;
+#             position: fixed;
 
-            top: 0;
-            left: 0;
+#             top: 0;
+#             left: 0;
 
-            width: 100%;
-            height: 100%;
-
-            background:
-                repeating-linear-gradient(
-                    to bottom,
-                    transparent,
-                    transparent 2px,
-                    rgba(0, 0, 0, 0.15) 3px,
-                    transparent 3px
-                );
-
-            pointer-events: none;
-
-            z-index: 50;
-
-        }
-
-
-        .glow {
-
-            text-shadow:
-                0 0 5px #22d3ee,
-                0 0 10px #22d3ee;
-
-        }
-
-
-    </style>
-
-</head>
-
-
-<body
-    class="
-        bg-black
-        text-cyan-400
-        min-h-screen
-        flex
-        flex-col
-        scanlines
-    ">
-
-
-<!-- ==========================================================
-     HEADER
-=========================================================== -->
+#             width: 100%;
+#             height: 100%;
+
+#             background:
+#                 repeating-linear-gradient(
+#                     to bottom,
+#                     transparent,
+#                     transparent 2px,
+#                     rgba(0, 0, 0, 0.15) 3px,
+#                     transparent 3px
+#                 );
+
+#             pointer-events: none;
+
+#             z-index: 50;
+
+#         }
+
+
+#         .glow {
+
+#             text-shadow:
+#                 0 0 5px #22d3ee,
+#                 0 0 10px #22d3ee;
+
+#         }
+
+
+#     </style>
+
+# </head>
+
+
+# <body
+#     class="
+#         bg-black
+#         text-cyan-400
+#         min-h-screen
+#         flex
+#         flex-col
+#         scanlines
+#     ">
+
+
+# <!-- ==========================================================
+#      HEADER
+# =========================================================== -->
 
-<header
-    class="
-        relative
-        z-20
-        w-full
-        border-b
-        border-cyan-900
-        bg-black/80
-    ">
+# <header
+#     class="
+#         relative
+#         z-20
+#         w-full
+#         border-b
+#         border-cyan-900
+#         bg-black/80
+#     ">
 
-    <div
-        class="
-            max-w-7xl
-            mx-auto
-            px-6
-            py-4
-            flex
-            justify-between
-            items-center
-        ">
+#     <div
+#         class="
+#             max-w-7xl
+#             mx-auto
+#             px-6
+#             py-4
+#             flex
+#             justify-between
+#             items-center
+#         ">
 
-
-        <!-- SYSTEM ID -->
+
+#         <!-- SYSTEM ID -->
 
-        <div
-            class="
-                flex
-                items-center
-                space-x-3
-            ">
-
-            <div
-                class="
-                    relative
-                    h-3
-                    w-3
-                ">
-
-                <div
-                    class="
-                        absolute
-                        h-full
-                        w-full
-                        bg-cyan-500
-                        rounded-full
-                        animate-ping
-                        opacity-75
-                    ">
-                </div>
-
-                <div
-                    class="
-                        relative
-                        h-3
-                        w-3
-                        bg-cyan-300
-                        rounded-full
-                    ">
-                </div>
-
-            </div>
-
-
-            <span
-                class="
-                    font-bold
-                    text-sm
-                    tracking-widest
-                    text-cyan-300
-                ">
-
-                SYS_ID: DATAHUB_CORE_1
-
-            </span>
-
-        </div>
-
-
-        <!-- AWS REGION -->
-
-        <div
-            class="
-                text-xs
-                px-4
-                py-2
-                rounded
-                border
-                border-cyan-900
-                bg-cyan-950/50
-            ">
-
-            AWS_REGION:
-
-            <span class="text-white">
-
-                {{ aws_region }}
+#         <div
+#             class="
+#                 flex
+#                 items-center
+#                 space-x-3
+#             ">
+
+#             <div
+#                 class="
+#                     relative
+#                     h-3
+#                     w-3
+#                 ">
+
+#                 <div
+#                     class="
+#                         absolute
+#                         h-full
+#                         w-full
+#                         bg-cyan-500
+#                         rounded-full
+#                         animate-ping
+#                         opacity-75
+#                     ">
+#                 </div>
+
+#                 <div
+#                     class="
+#                         relative
+#                         h-3
+#                         w-3
+#                         bg-cyan-300
+#                         rounded-full
+#                     ">
+#                 </div>
+
+#             </div>
+
+
+#             <span
+#                 class="
+#                     font-bold
+#                     text-sm
+#                     tracking-widest
+#                     text-cyan-300
+#                 ">
+
+#                 SYS_ID: DATAHUB_CORE_1
+
+#             </span>
+
+#         </div>
+
+
+#         <!-- AWS REGION -->
+
+#         <div
+#             class="
+#                 text-xs
+#                 px-4
+#                 py-2
+#                 rounded
+#                 border
+#                 border-cyan-900
+#                 bg-cyan-950/50
+#             ">
+
+#             AWS_REGION:
+
+#             <span class="text-white">
+
+#                 {{ aws_region }}
 
-            </span>
+#             </span>
 
-        </div>
+#         </div>
 
-    </div>
-
-</header>
-
-
-<!-- ==========================================================
-     MAIN
-=========================================================== -->
-
-<main
-    class="
-        flex-grow
-        flex
-        items-center
-        justify-center
-        px-6
-        py-10
-        relative
-        z-20
-    ">
+#     </div>
+
+# </header>
+
+
+# <!-- ==========================================================
+#      MAIN
+# =========================================================== -->
+
+# <main
+#     class="
+#         flex-grow
+#         flex
+#         items-center
+#         justify-center
+#         px-6
+#         py-10
+#         relative
+#         z-20
+#     ">
 
 
-<div
-    class="
-        grid
-        grid-cols-1
-        lg:grid-cols-3
-        gap-6
-        w-full
-        max-w-7xl
-    ">
+# <div
+#     class="
+#         grid
+#         grid-cols-1
+#         lg:grid-cols-3
+#         gap-6
+#         w-full
+#         max-w-7xl
+#     ">
 
 
-<!-- ==========================================================
-     LEFT PANEL
-=========================================================== -->
+# <!-- ==========================================================
+#      LEFT PANEL
+# =========================================================== -->
 
-<div
-    class="
-        lg:col-span-2
-        bg-black
-        border
-        border-cyan-900
-        p-8
-        rounded-lg
-        shadow-inner
-    ">
+# <div
+#     class="
+#         lg:col-span-2
+#         bg-black
+#         border
+#         border-cyan-900
+#         p-8
+#         rounded-lg
+#         shadow-inner
+#     ">
 
 
-    <!-- TITLE -->
+#     <!-- TITLE -->
 
-    <div
-        class="
-            flex
-            flex-col
-            md:flex-row
-            md:items-center
-            md:justify-between
-            border-b
-            border-cyan-900
-            pb-5
-            mb-6
-        ">
+#     <div
+#         class="
+#             flex
+#             flex-col
+#             md:flex-row
+#             md:items-center
+#             md:justify-between
+#             border-b
+#             border-cyan-900
+#             pb-5
+#             mb-6
+#         ">
 
 
-        <div>
+#         <div>
 
-            <p
-                class="
-                    text-xs
-                    text-cyan-700
-                    tracking-widest
-                ">
+#             <p
+#                 class="
+#                     text-xs
+#                     text-cyan-700
+#                     tracking-widest
+#                 ">
 
-                DATA PLATFORM
+#                 DATA PLATFORM
 
-            </p>
+#             </p>
 
 
-            <h1
-                class="
-                    text-4xl
-                    md:text-6xl
-                    font-black
-                    text-white
-                    tracking-tight
-                ">
+#             <h1
+#                 class="
+#                     text-4xl
+#                     md:text-6xl
+#                     font-black
+#                     text-white
+#                     tracking-tight
+#                 ">
 
-                DATAHUB_
+#                 DATAHUB_
 
-            </h1>
+#             </h1>
 
-        </div>
+#         </div>
 
 
-        <span
-            class="
-                text-3xl
-                md:text-5xl
-                font-black
-                text-green-400
-                mt-4
-                md:mt-0
-            ">
+#         <span
+#             class="
+#                 text-3xl
+#                 md:text-5xl
+#                 font-black
+#                 text-green-400
+#                 mt-4
+#                 md:mt-0
+#             ">
 
-            ONLINE
+#             ONLINE
 
-        </span>
+#         </span>
 
-    </div>
+#     </div>
 
 
-    <!-- STATUS -->
+#     <!-- STATUS -->
 
-    <div
-        class="
-            text-cyan-600
-            text-lg
-            leading-relaxed
-        ">
+#     <div
+#         class="
+#             text-cyan-600
+#             text-lg
+#             leading-relaxed
+#         ">
 
 
-        <p class="animate-pulse">
+#         <p class="animate-pulse">
 
-            /// STATUS:
-            DATA PROCESSING NODE OPERATIONAL.
+#             /// STATUS:
+#             DATA PROCESSING NODE OPERATIONAL.
 
-        </p>
+#         </p>
 
 
-        <p class="mt-2">
+#         <p class="mt-2">
 
-            AWS Elastic Beanstalk successfully
-            initialized with Python / Flask runtime.
+#             AWS Elastic Beanstalk successfully
+#             initialized with Python / Flask runtime.
 
-        </p>
+#         </p>
 
 
-        <p class="mt-2 text-white">
+#         <p class="mt-2 text-white">
 
-            ENVIRONMENT:
+#             ENVIRONMENT:
 
-            <span class="text-cyan-400">
+#             <span class="text-cyan-400">
 
-                {{ env_name }}
+#                 {{ env_name }}
 
-            </span>
+#             </span>
 
-        </p>
+#         </p>
 
-    </div>
+#     </div>
 
 
-    <!-- ======================================================
-         DATA PIPELINE
-    ======================================================= -->
+#     <!-- ======================================================
+#          DATA PIPELINE
+#     ======================================================= -->
 
-    <div
-        class="
-            mt-8
-            grid
-            grid-cols-1
-            md:grid-cols-3
-            gap-4
-        ">
+#     <div
+#         class="
+#             mt-8
+#             grid
+#             grid-cols-1
+#             md:grid-cols-3
+#             gap-4
+#         ">
 
 
-        <!-- SOURCE -->
+#         <!-- SOURCE -->
 
-        <div
-            class="
-                bg-cyan-950/40
-                border
-                border-cyan-900
-                rounded
-                p-5
-            ">
+#         <div
+#             class="
+#                 bg-cyan-950/40
+#                 border
+#                 border-cyan-900
+#                 rounded
+#                 p-5
+#             ">
 
-            <p
-                class="
-                    text-xs
-                    text-cyan-700
-                ">
+#             <p
+#                 class="
+#                     text-xs
+#                     text-cyan-700
+#                 ">
 
-                DATA_SOURCE
+#                 DATA_SOURCE
 
-            </p>
+#             </p>
 
 
-            <p
-                class="
-                    text-xl
-                    text-white
-                    font-bold
-                    mt-2
-                ">
+#             <p
+#                 class="
+#                     text-xl
+#                     text-white
+#                     font-bold
+#                     mt-2
+#                 ">
 
-                {{ data_source }}
+#                 {{ data_source }}
 
-            </p>
+#             </p>
 
-        </div>
+#         </div>
 
 
-        <!-- ETL -->
+#         <!-- ETL -->
 
-        <div
-            class="
-                bg-cyan-950/40
-                border
-                border-cyan-900
-                rounded
-                p-5
-            ">
+#         <div
+#             class="
+#                 bg-cyan-950/40
+#                 border
+#                 border-cyan-900
+#                 rounded
+#                 p-5
+#             ">
 
-            <p
-                class="
-                    text-xs
-                    text-cyan-700
-                ">
+#             <p
+#                 class="
+#                     text-xs
+#                     text-cyan-700
+#                 ">
 
-                PIPELINE_STATUS
+#                 PIPELINE_STATUS
 
-            </p>
+#             </p>
 
 
-            <p
-                class="
-                    text-xl
-                    text-green-400
-                    font-bold
-                    mt-2
-                ">
+#             <p
+#                 class="
+#                     text-xl
+#                     text-green-400
+#                     font-bold
+#                     mt-2
+#                 ">
 
-                {{ etl_status }}
+#                 {{ etl_status }}
 
-            </p>
+#             </p>
 
-        </div>
+#         </div>
 
 
-        <!-- TARGET -->
+#         <!-- TARGET -->
 
-        <div
-            class="
-                bg-cyan-950/40
-                border
-                border-cyan-900
-                rounded
-                p-5
-            ">
+#         <div
+#             class="
+#                 bg-cyan-950/40
+#                 border
+#                 border-cyan-900
+#                 rounded
+#                 p-5
+#             ">
 
-            <p
-                class="
-                    text-xs
-                    text-cyan-700
-                ">
+#             <p
+#                 class="
+#                     text-xs
+#                     text-cyan-700
+#                 ">
 
-                TARGET_SYSTEM
+#                 TARGET_SYSTEM
 
-            </p>
+#             </p>
 
 
-            <p
-                class="
-                    text-xl
-                    text-white
-                    font-bold
-                    mt-2
-                ">
+#             <p
+#                 class="
+#                     text-xl
+#                     text-white
+#                     font-bold
+#                     mt-2
+#                 ">
 
-                {{ target_system }}
+#                 {{ target_system }}
 
-            </p>
+#             </p>
 
-        </div>
+#         </div>
 
-    </div>
+#     </div>
 
 
-    <!-- ======================================================
-         RECORD METRICS
-    ======================================================= -->
+#     <!-- ======================================================
+#          RECORD METRICS
+#     ======================================================= -->
 
-    <div
-        class="
-            mt-4
-            bg-cyan-950/20
-            border
-            border-cyan-900
-            rounded
-            p-5
-        ">
+#     <div
+#         class="
+#             mt-4
+#             bg-cyan-950/20
+#             border
+#             border-cyan-900
+#             rounded
+#             p-5
+#         ">
 
 
-        <div
-            class="
-                flex
-                justify-between
-                items-center
-            ">
+#         <div
+#             class="
+#                 flex
+#                 justify-between
+#                 items-center
+#             ">
 
 
-            <div>
+#             <div>
 
-                <p
-                    class="
-                        text-xs
-                        text-cyan-700
-                    ">
+#                 <p
+#                     class="
+#                         text-xs
+#                         text-cyan-700
+#                     ">
 
-                    RECORDS_PROCESSED
+#                     RECORDS_PROCESSED
 
-                </p>
+#                 </p>
 
 
-                <p
-                    class="
-                        text-3xl
-                        text-white
-                        font-bold
-                        mt-2
-                    ">
+#                 <p
+#                     class="
+#                         text-3xl
+#                         text-white
+#                         font-bold
+#                         mt-2
+#                     ">
 
-                    {{ records_processed }}
+#                     {{ records_processed }}
 
-                </p>
+#                 </p>
 
-            </div>
+#             </div>
 
 
-            <div>
+#             <div>
 
-                <p
-                    class="
-                        text-xs
-                        text-cyan-700
-                        text-right
-                    ">
+#                 <p
+#                     class="
+#                         text-xs
+#                         text-cyan-700
+#                         text-right
+#                     ">
 
-                    LAST_PIPELINE_RUN
+#                     LAST_PIPELINE_RUN
 
-                </p>
+#                 </p>
 
 
-                <p
-                    class="
-                        text-sm
-                        text-cyan-300
-                        mt-2
-                    ">
+#                 <p
+#                     class="
+#                         text-sm
+#                         text-cyan-300
+#                         mt-2
+#                     ">
 
-                    {{ last_run }}
+#                     {{ last_run }}
 
-                </p>
+#                 </p>
 
-            </div>
+#             </div>
 
-        </div>
+#         </div>
 
-    </div>
+#     </div>
 
 
-    <!-- ======================================================
-         TERMINAL
-    ======================================================= -->
+#     <!-- ======================================================
+#          TERMINAL
+#     ======================================================= -->
 
-    <div
-        class="
-            mt-8
-            bg-gray-950
-            border
-            border-gray-800
-            rounded
-            p-5
-            text-xs
-            space-y-2
-            text-cyan-300
-        ">
+#     <div
+#         class="
+#             mt-8
+#             bg-gray-950
+#             border
+#             border-gray-800
+#             rounded
+#             p-5
+#             text-xs
+#             space-y-2
+#             text-cyan-300
+#         ">
 
 
-        <p>
+#         <p>
 
-            &gt; INITIALIZING DATAHUB CORE... [OK]
+#             &gt; INITIALIZING DATAHUB CORE... [OK]
 
-        </p>
+#         </p>
 
 
-        <p>
+#         <p>
 
-            &gt; CONNECTING TO AMAZON S3... [OK]
+#             &gt; CONNECTING TO AMAZON S3... [OK]
 
-        </p>
+#         </p>
 
 
-        <p>
+#         <p>
 
-            &gt; VALIDATING DATA SOURCE... [OK]
+#             &gt; VALIDATING DATA SOURCE... [OK]
 
-        </p>
+#         </p>
 
 
-        <p>
+#         <p>
 
-            &gt; INITIALIZING ETL PIPELINE... [OK]
+#             &gt; INITIALIZING ETL PIPELINE... [OK]
 
-        </p>
+#         </p>
 
 
-        <p>
+#         <p>
 
-            &gt; CHECKING AWS ENVIRONMENT... [OK]
+#             &gt; CHECKING AWS ENVIRONMENT... [OK]
 
-        </p>
+#         </p>
 
 
-        <p>
+#         <p>
 
-            &gt; STARTING FLASK APPLICATION... [OK]
+#             &gt; STARTING FLASK APPLICATION... [OK]
 
-        </p>
+#         </p>
 
 
-        <p class="text-green-400">
+#         <p class="text-green-400">
 
-            &gt;&gt;&gt; DATA PLATFORM READY.
+#             &gt;&gt;&gt; DATA PLATFORM READY.
 
-        </p>
+#         </p>
 
-    </div>
+#     </div>
 
-</div>
+# </div>
 
 
-<!-- ==========================================================
-     RIGHT PANEL
-=========================================================== -->
+# <!-- ==========================================================
+#      RIGHT PANEL
+# =========================================================== -->
 
-<div
-    class="
-        bg-black
-        border
-        border-cyan-900
-        p-6
-        rounded-lg
-        shadow-inner
-        flex
-        flex-col
-        justify-between
-    ">
+# <div
+#     class="
+#         bg-black
+#         border
+#         border-cyan-900
+#         p-6
+#         rounded-lg
+#         shadow-inner
+#         flex
+#         flex-col
+#         justify-between
+#     ">
 
 
-<div>
+# <div>
 
 
-    <h2
-        class="
-            text-xl
-            font-bold
-            text-cyan-200
-            uppercase
-            border-b
-            border-cyan-900
-            pb-3
-            mb-5
-        ">
+#     <h2
+#         class="
+#             text-xl
+#             font-bold
+#             text-cyan-200
+#             uppercase
+#             border-b
+#             border-cyan-900
+#             pb-3
+#             mb-5
+#         ">
 
-        SYSTEM_STATS
+#         SYSTEM_STATS
 
-    </h2>
+#     </h2>
 
 
-    <!-- SERVER TIME -->
+#     <!-- SERVER TIME -->
 
-    <div
-        class="
-            bg-cyan-950/40
-            p-4
-            rounded
-            border
-            border-cyan-900
-            mb-4
-        ">
+#     <div
+#         class="
+#             bg-cyan-950/40
+#             p-4
+#             rounded
+#             border
+#             border-cyan-900
+#             mb-4
+#         ">
 
-        <p
-            class="
-                text-xs
-                text-cyan-600
-            ">
+#         <p
+#             class="
+#                 text-xs
+#                 text-cyan-600
+#             ">
 
-            SERVER_TIME_UTC
+#             SERVER_TIME_UTC
 
-        </p>
+#         </p>
 
 
-        <p
-            id="server-time"
-            class="
-                text-lg
-                text-white
-                font-bold
-                mt-2
-            ">
+#         <p
+#             id="server-time"
+#             class="
+#                 text-lg
+#                 text-white
+#                 font-bold
+#                 mt-2
+#             ">
 
-            {{ current_time }}
+#             {{ current_time }}
 
-        </p>
+#         </p>
 
-    </div>
+#     </div>
 
 
-    <!-- ENVIRONMENT HEALTH -->
+#     <!-- ENVIRONMENT HEALTH -->
 
-    <div
-        class="
-            bg-cyan-950/40
-            p-4
-            rounded
-            border
-            border-cyan-900
-            mb-4
-        ">
+#     <div
+#         class="
+#             bg-cyan-950/40
+#             p-4
+#             rounded
+#             border
+#             border-cyan-900
+#             mb-4
+#         ">
 
-        <p
-            class="
-                text-xs
-                text-cyan-600
-            ">
+#         <p
+#             class="
+#                 text-xs
+#                 text-cyan-600
+#             ">
 
-            ENVIRONMENT_HEALTH
+#             ENVIRONMENT_HEALTH
 
-        </p>
+#         </p>
 
 
-        <p
-            class="
-                text-green-400
-                font-bold
-                mt-2
-                text-lg
-                flex
-                items-center
-                space-x-2
-            ">
+#         <p
+#             class="
+#                 text-green-400
+#                 font-bold
+#                 mt-2
+#                 text-lg
+#                 flex
+#                 items-center
+#                 space-x-2
+#             ">
 
 
-            <span
-                class="
-                    relative
-                    flex
-                    h-3
-                    w-3
-                ">
+#             <span
+#                 class="
+#                     relative
+#                     flex
+#                     h-3
+#                     w-3
+#                 ">
 
-                <span
-                    class="
-                        animate-ping
-                        absolute
-                        inline-flex
-                        h-full
-                        w-full
-                        rounded-full
-                        bg-green-400
-                        opacity-75
-                    ">
-                </span>
+#                 <span
+#                     class="
+#                         animate-ping
+#                         absolute
+#                         inline-flex
+#                         h-full
+#                         w-full
+#                         rounded-full
+#                         bg-green-400
+#                         opacity-75
+#                     ">
+#                 </span>
 
 
-                <span
-                    class="
-                        relative
-                        inline-flex
-                        rounded-full
-                        h-3
-                        w-3
-                        bg-green-500
-                    ">
-                </span>
+#                 <span
+#                     class="
+#                         relative
+#                         inline-flex
+#                         rounded-full
+#                         h-3
+#                         w-3
+#                         bg-green-500
+#                     ">
+#                 </span>
 
-            </span>
+#             </span>
 
 
-            <span>
+#             <span>
 
-                NOMINAL
+#                 NOMINAL
 
-            </span>
+#             </span>
 
-        </p>
+#         </p>
 
-    </div>
+#     </div>
 
 
-    <!-- PYTHON VERSION -->
+#     <!-- PYTHON VERSION -->
 
-    <div
-        class="
-            bg-cyan-950/40
-            p-4
-            rounded
-            border
-            border-cyan-900
-        ">
+#     <div
+#         class="
+#             bg-cyan-950/40
+#             p-4
+#             rounded
+#             border
+#             border-cyan-900
+#         ">
 
-        <p
-            class="
-                text-xs
-                text-cyan-600
-            ">
+#         <p
+#             class="
+#                 text-xs
+#                 text-cyan-600
+#             ">
 
-            PYTHON_RUNTIME
+#             PYTHON_RUNTIME
 
-        </p>
+#         </p>
 
 
-        <p
-            class="
-                text-lg
-                text-white
-                font-bold
-                mt-2
-            ">
+#         <p
+#             class="
+#                 text-lg
+#                 text-white
+#                 font-bold
+#                 mt-2
+#             ">
 
-            {{ python_version }}
+#             {{ python_version }}
 
-        </p>
+#         </p>
 
-    </div>
+#     </div>
 
-</div>
+# </div>
 
 
-<!-- ======================================================
-     ACTION BUTTONS
-======================================================= -->
+# <!-- ======================================================
+#      ACTION BUTTONS
+# ======================================================= -->
 
-<div
-    class="
-        space-y-3
-        pt-6
-        border-t
-        border-cyan-900
-        mt-6
-    ">
+# <div
+#     class="
+#         space-y-3
+#         pt-6
+#         border-t
+#         border-cyan-900
+#         mt-6
+#     ">
 
 
-    <a
-        href="/health"
-        class="
-            block
-            w-full
-            text-center
-            px-6
-            py-3
-            rounded
-            bg-cyan-900
-            hover:bg-cyan-800
-            text-white
-            font-bold
-            text-sm
-            uppercase
-            tracking-wider
-        ">
+#     <a
+#         href="/health"
+#         class="
+#             block
+#             w-full
+#             text-center
+#             px-6
+#             py-3
+#             rounded
+#             bg-cyan-900
+#             hover:bg-cyan-800
+#             text-white
+#             font-bold
+#             text-sm
+#             uppercase
+#             tracking-wider
+#         ">
 
-        RUN HEALTH CHECK
+#         RUN HEALTH CHECK
 
-    </a>
+#     </a>
 
 
-    <a
-        href="/api/status"
-        class="
-            block
-            w-full
-            text-center
-            px-6
-            py-3
-            rounded
-            bg-gray-900
-            hover:bg-gray-800
-            text-cyan-300
-            font-bold
-            text-sm
-            border
-            border-gray-700
-        ">
+#     <a
+#         href="/api/status"
+#         class="
+#             block
+#             w-full
+#             text-center
+#             px-6
+#             py-3
+#             rounded
+#             bg-gray-900
+#             hover:bg-gray-800
+#             text-cyan-300
+#             font-bold
+#             text-sm
+#             border
+#             border-gray-700
+#         ">
 
-        VIEW API STATUS
+#         VIEW API STATUS
 
-    </a>
+#     </a>
 
 
-    <a
-        href="{{ github_url }}"
-        target="_blank"
-        class="
-            block
-            w-full
-            text-center
-            px-6
-            py-3
-            rounded
-            bg-gray-900
-            hover:bg-gray-800
-            text-cyan-300
-            font-bold
-            text-sm
-            border
-            border-gray-700
-        ">
+#     <a
+#         href="{{ github_url }}"
+#         target="_blank"
+#         class="
+#             block
+#             w-full
+#             text-center
+#             px-6
+#             py-3
+#             rounded
+#             bg-gray-900
+#             hover:bg-gray-800
+#             text-cyan-300
+#             font-bold
+#             text-sm
+#             border
+#             border-gray-700
+#         ">
 
-        SOURCE CODE
+#         SOURCE CODE
 
-    </a>
+#     </a>
 
-</div>
+# </div>
 
 
-</div>
+# </div>
 
 
-</div>
+# </div>
 
-</main>
+# </main>
 
 
-<!-- ==========================================================
-     FOOTER
-=========================================================== -->
+# <!-- ==========================================================
+#      FOOTER
+# =========================================================== -->
 
-<footer
-    class="
-        relative
-        z-20
-        py-4
-        text-center
-        text-xs
-        text-cyan-900
-        border-t
-        border-cyan-950
-        w-full
-        bg-black/50
-    ">
+# <footer
+#     class="
+#         relative
+#         z-20
+#         py-4
+#         text-center
+#         text-xs
+#         text-cyan-900
+#         border-t
+#         border-cyan-950
+#         w-full
+#         bg-black/50
+#     ">
 
-    [DATAHUB_CORE_RUNNING]
-    >>
-    AWS ELASTIC BEANSTALK
-    >>
-    FLASK
-    >>
-    ETL READY
+#     [DATAHUB_CORE_RUNNING]
+#     >>
+#     AWS ELASTIC BEANSTALK
+#     >>
+#     FLASK
+#     >>
+#     ETL READY
 
-</footer>
+# </footer>
 
 
-</body>
+# </body>
 
-</html>
-"""
+# </html>
+# """
 
 
-# ============================================================
-# HOME PAGE
-# ============================================================
+# # ============================================================
+# # HOME PAGE
+# # ============================================================
 
-@application.route("/")
-def home():
+# @application.route("/")
+# def home():
 
-    now = datetime.utcnow().strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+#     now = datetime.utcnow().strftime(
+#         "%Y-%m-%d %H:%M:%S"
+#     )
 
-    return render_template_string(
+#     return render_template_string(
 
-        HTML_TEMPLATE,
+#         HTML_TEMPLATE,
 
-        current_time=now,
+#         current_time=now,
 
-        github_url=GITHUB_REPO_URL,
+#         github_url=GITHUB_REPO_URL,
 
-        env_name=ENV_NAME,
+#         env_name=ENV_NAME,
 
-        aws_region=AWS_REGION,
+#         aws_region=AWS_REGION,
 
-        data_source=DATA_SOURCE,
+#         data_source=DATA_SOURCE,
 
-        target_system=TARGET_SYSTEM,
+#         target_system=TARGET_SYSTEM,
 
-        etl_status=ETL_STATUS,
+#         etl_status=ETL_STATUS,
 
-        records_processed=f"{RECORDS_PROCESSED:,}",
+#         records_processed=f"{RECORDS_PROCESSED:,}",
 
-        last_run=LAST_RUN,
+#         last_run=LAST_RUN,
 
-        python_version=platform.python_version()
+#         python_version=platform.python_version()
 
-    )
+#     )
 
 
-# ============================================================
-# HEALTH CHECK
-# ============================================================
+# # ============================================================
+# # HEALTH CHECK
+# # ============================================================
 
-@application.route("/health")
-def health_check():
+# @application.route("/health")
+# def health_check():
 
-    return jsonify({
+#     return jsonify({
 
-        "status": "healthy",
+#         "status": "healthy",
 
-        "application":
-            APPLICATION_NAME,
+#         "application":
+#             APPLICATION_NAME,
 
-        "service":
-            "Flask",
+#         "service":
+#             "Flask",
 
-        "environment":
-            ENV_NAME,
+#         "environment":
+#             ENV_NAME,
 
-        "aws_region":
-            AWS_REGION,
+#         "aws_region":
+#             AWS_REGION,
 
-        "etl_status":
-            ETL_STATUS,
+#         "etl_status":
+#             ETL_STATUS,
 
-        "timestamp_utc":
-            datetime.utcnow().isoformat(),
+#         "timestamp_utc":
+#             datetime.utcnow().isoformat(),
 
-        "python_version":
-            platform.python_version()
+#         "python_version":
+#             platform.python_version()
 
-    }), 200
+#     }), 200
 
 
-# ============================================================
-# API STATUS
-# ============================================================
+# # ============================================================
+# # API STATUS
+# # ============================================================
 
-@application.route("/api/status")
-def api_status():
+# @application.route("/api/status")
+# def api_status():
 
-    return jsonify({
+#     return jsonify({
 
-        "application":
-            APPLICATION_NAME,
+#         "application":
+#             APPLICATION_NAME,
 
-        "deployment":
-            "AWS Elastic Beanstalk",
+#         "deployment":
+#             "AWS Elastic Beanstalk",
 
-        "status":
-            "RUNNING",
+#         "status":
+#             "RUNNING",
 
-        "data_source":
-            DATA_SOURCE,
+#         "data_source":
+#             DATA_SOURCE,
 
-        "target_system":
-            TARGET_SYSTEM,
+#         "target_system":
+#             TARGET_SYSTEM,
 
-        "etl_pipeline":
-            ETL_STATUS,
+#         "etl_pipeline":
+#             ETL_STATUS,
 
-        "records_processed":
-            RECORDS_PROCESSED,
+#         "records_processed":
+#             RECORDS_PROCESSED,
 
-        "last_etl_run":
-            LAST_RUN,
+#         "last_etl_run":
+#             LAST_RUN,
 
-        "environment":
-            ENV_NAME,
+#         "environment":
+#             ENV_NAME,
 
-        "aws_region":
-            AWS_REGION
+#         "aws_region":
+#             AWS_REGION
 
-    }), 200
+#     }), 200
 
 
-# ============================================================
-# LOCAL DEVELOPMENT
-# ============================================================
+# # ============================================================
+# # LOCAL DEVELOPMENT
+# # ============================================================
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    application.run(
+#     application.run(
 
-        host="0.0.0.0",
+#         host="0.0.0.0",
 
-        port=5000,
+#         port=5000,
 
-        debug=False
+#         debug=False
 
-    )
-```
+#     )
+# ```
