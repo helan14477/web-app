@@ -4,34 +4,38 @@ from datetime import datetime
 import os
 import platform
 
-application = Flask(__name__)
-
-# ---------------------------------------------------------
-# CONFIGURATION
-# ---------------------------------------------------------
+# ============================================================
+# APPLICATION CONFIGURATION
+# ============================================================
 
 GITHUB_REPO_URL = "https://github.com/your-username/your-repo-name"
 
-APPLICATION_NAME = "DATAFLOW_CORE"
+application = Flask(__name__)
 
-# Environment variables can be configured in Elastic Beanstalk
+APPLICATION_NAME = "DATAHUB_CORE"
+
+# Read AWS / Elastic Beanstalk environment variables
 AWS_REGION = os.environ.get("AWS_REGION", "ap-south-1")
-EB_ENVIRONMENT = os.environ.get(
+ENV_NAME = os.environ.get(
     "AWS_EB_ENVIRONMENT_NAME",
-    "LOCAL_DEBUG"
+    "LOCAL_DEVELOPMENT"
 )
 
-# Sample ETL metrics
-ETL_STATUS = "RUNNING"
+# Sample application metrics
 RECORDS_PROCESSED = 12540
-LAST_ETL_RUN = "2026-09-23 10:45:32 UTC"
+ETL_STATUS = "ACTIVE"
+DATA_SOURCE = "AMAZON S3"
+TARGET_SYSTEM = "AWS GLUE"
+LAST_RUN = "2026-09-23 10:45:32 UTC"
 
-# ---------------------------------------------------------
+
+# ============================================================
 # HTML TEMPLATE
-# ---------------------------------------------------------
+# ============================================================
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -41,7 +45,9 @@ HTML_TEMPLATE = """
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>DATAFLOW CORE | AWS</title>
+    <title>
+        DATAHUB CORE | AWS Elastic Beanstalk
+    </title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -56,8 +62,8 @@ HTML_TEMPLATE = """
             ).textContent =
                 now.toISOString()
                    .replace('T', ' ')
-                   .substring(0, 19) + ' UTC';
-
+                   .substring(0, 19)
+                   + ' UTC';
         }
 
         setInterval(updateClock, 1000);
@@ -66,15 +72,22 @@ HTML_TEMPLATE = """
 
     </script>
 
+
     <style>
 
         @import url(
             'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap'
         );
 
+
         body {
-            font-family: 'Share Tech Mono', monospace;
+
+            font-family:
+                'Share Tech Mono',
+                monospace;
+
         }
+
 
         .scanlines::before {
 
@@ -100,7 +113,18 @@ HTML_TEMPLATE = """
             pointer-events: none;
 
             z-index: 50;
+
         }
+
+
+        .glow {
+
+            text-shadow:
+                0 0 5px #22d3ee,
+                0 0 10px #22d3ee;
+
+        }
+
 
     </style>
 
@@ -108,61 +132,117 @@ HTML_TEMPLATE = """
 
 
 <body
-class="bg-black text-cyan-400 min-h-screen
-       flex flex-col scanlines">
+    class="
+        bg-black
+        text-cyan-400
+        min-h-screen
+        flex
+        flex-col
+        scanlines
+    ">
 
-<!-- =====================================================
+
+<!-- ==========================================================
      HEADER
-===================================================== -->
+=========================================================== -->
 
 <header
-class="relative z-20 w-full
-       border-b border-cyan-900
-       bg-black/80">
+    class="
+        relative
+        z-20
+        w-full
+        border-b
+        border-cyan-900
+        bg-black/80
+    ">
 
     <div
-    class="max-w-7xl mx-auto
-           px-6 py-4
-           flex justify-between items-center">
+        class="
+            max-w-7xl
+            mx-auto
+            px-6
+            py-4
+            flex
+            justify-between
+            items-center
+        ">
 
-        <div class="flex items-center space-x-3">
 
-            <div class="relative h-3 w-3">
+        <!-- SYSTEM ID -->
+
+        <div
+            class="
+                flex
+                items-center
+                space-x-3
+            ">
+
+            <div
+                class="
+                    relative
+                    h-3
+                    w-3
+                ">
 
                 <div
-                class="absolute h-full w-full
-                       bg-cyan-500 rounded-full
-                       animate-ping opacity-75">
+                    class="
+                        absolute
+                        h-full
+                        w-full
+                        bg-cyan-500
+                        rounded-full
+                        animate-ping
+                        opacity-75
+                    ">
                 </div>
 
                 <div
-                class="relative h-3 w-3
-                       bg-cyan-300 rounded-full">
+                    class="
+                        relative
+                        h-3
+                        w-3
+                        bg-cyan-300
+                        rounded-full
+                    ">
                 </div>
 
             </div>
 
-            <span
-            class="font-bold text-sm
-                   tracking-widest
-                   text-cyan-300">
 
-                SYS_ID: DATAFLOW_CORE_1
+            <span
+                class="
+                    font-bold
+                    text-sm
+                    tracking-widest
+                    text-cyan-300
+                ">
+
+                SYS_ID: DATAHUB_CORE_1
 
             </span>
 
         </div>
 
 
+        <!-- AWS REGION -->
+
         <div
-        class="text-xs px-4 py-2
-               rounded border
-               border-cyan-900
-               bg-cyan-950/50">
+            class="
+                text-xs
+                px-4
+                py-2
+                rounded
+                border
+                border-cyan-900
+                bg-cyan-950/50
+            ">
 
             AWS_REGION:
+
             <span class="text-white">
+
                 {{ aws_region }}
+
             </span>
 
         </div>
@@ -172,443 +252,765 @@ class="relative z-20 w-full
 </header>
 
 
-<!-- =====================================================
+<!-- ==========================================================
      MAIN
-===================================================== -->
+=========================================================== -->
 
 <main
-class="flex-grow
-       flex items-center
-       justify-center
-       px-6 py-10
-       relative z-20">
+    class="
+        flex-grow
+        flex
+        items-center
+        justify-center
+        px-6
+        py-10
+        relative
+        z-20
+    ">
 
 
 <div
-class="grid grid-cols-1
-       lg:grid-cols-3
-       gap-6
-       w-full max-w-7xl">
+    class="
+        grid
+        grid-cols-1
+        lg:grid-cols-3
+        gap-6
+        w-full
+        max-w-7xl
+    ">
 
 
-<!-- =====================================================
-     MAIN STATUS PANEL
-===================================================== -->
-
-<div
-class="lg:col-span-2
-       bg-black
-       border border-cyan-900
-       rounded-lg
-       p-8
-       shadow-lg">
-
+<!-- ==========================================================
+     LEFT PANEL
+=========================================================== -->
 
 <div
-class="flex flex-col md:flex-row
-       justify-between
-       md:items-center
-       border-b border-cyan-900
-       pb-5 mb-6">
+    class="
+        lg:col-span-2
+        bg-black
+        border
+        border-cyan-900
+        p-8
+        rounded-lg
+        shadow-inner
+    ">
 
 
-<div>
+    <!-- TITLE -->
 
-<p class="text-xs text-cyan-700">
-APPLICATION
-</p>
+    <div
+        class="
+            flex
+            flex-col
+            md:flex-row
+            md:items-center
+            md:justify-between
+            border-b
+            border-cyan-900
+            pb-5
+            mb-6
+        ">
 
-<h1
-class="text-4xl md:text-6xl
-       font-black
-       text-white
-       tracking-tight">
 
-DATAFLOW_
+        <div>
 
-</h1>
+            <p
+                class="
+                    text-xs
+                    text-cyan-700
+                    tracking-widest
+                ">
+
+                DATA PLATFORM
+
+            </p>
+
+
+            <h1
+                class="
+                    text-4xl
+                    md:text-6xl
+                    font-black
+                    text-white
+                    tracking-tight
+                ">
+
+                DATAHUB_
+
+            </h1>
+
+        </div>
+
+
+        <span
+            class="
+                text-3xl
+                md:text-5xl
+                font-black
+                text-green-400
+                mt-4
+                md:mt-0
+            ">
+
+            ONLINE
+
+        </span>
+
+    </div>
+
+
+    <!-- STATUS -->
+
+    <div
+        class="
+            text-cyan-600
+            text-lg
+            leading-relaxed
+        ">
+
+
+        <p class="animate-pulse">
+
+            /// STATUS:
+            DATA PROCESSING NODE OPERATIONAL.
+
+        </p>
+
+
+        <p class="mt-2">
+
+            AWS Elastic Beanstalk successfully
+            initialized with Python / Flask runtime.
+
+        </p>
+
+
+        <p class="mt-2 text-white">
+
+            ENVIRONMENT:
+
+            <span class="text-cyan-400">
+
+                {{ env_name }}
+
+            </span>
+
+        </p>
+
+    </div>
+
+
+    <!-- ======================================================
+         DATA PIPELINE
+    ======================================================= -->
+
+    <div
+        class="
+            mt-8
+            grid
+            grid-cols-1
+            md:grid-cols-3
+            gap-4
+        ">
+
+
+        <!-- SOURCE -->
+
+        <div
+            class="
+                bg-cyan-950/40
+                border
+                border-cyan-900
+                rounded
+                p-5
+            ">
+
+            <p
+                class="
+                    text-xs
+                    text-cyan-700
+                ">
+
+                DATA_SOURCE
+
+            </p>
+
+
+            <p
+                class="
+                    text-xl
+                    text-white
+                    font-bold
+                    mt-2
+                ">
+
+                {{ data_source }}
+
+            </p>
+
+        </div>
+
+
+        <!-- ETL -->
+
+        <div
+            class="
+                bg-cyan-950/40
+                border
+                border-cyan-900
+                rounded
+                p-5
+            ">
+
+            <p
+                class="
+                    text-xs
+                    text-cyan-700
+                ">
+
+                PIPELINE_STATUS
+
+            </p>
+
+
+            <p
+                class="
+                    text-xl
+                    text-green-400
+                    font-bold
+                    mt-2
+                ">
+
+                {{ etl_status }}
+
+            </p>
+
+        </div>
+
+
+        <!-- TARGET -->
+
+        <div
+            class="
+                bg-cyan-950/40
+                border
+                border-cyan-900
+                rounded
+                p-5
+            ">
+
+            <p
+                class="
+                    text-xs
+                    text-cyan-700
+                ">
+
+                TARGET_SYSTEM
+
+            </p>
+
+
+            <p
+                class="
+                    text-xl
+                    text-white
+                    font-bold
+                    mt-2
+                ">
+
+                {{ target_system }}
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         RECORD METRICS
+    ======================================================= -->
+
+    <div
+        class="
+            mt-4
+            bg-cyan-950/20
+            border
+            border-cyan-900
+            rounded
+            p-5
+        ">
+
+
+        <div
+            class="
+                flex
+                justify-between
+                items-center
+            ">
+
+
+            <div>
+
+                <p
+                    class="
+                        text-xs
+                        text-cyan-700
+                    ">
+
+                    RECORDS_PROCESSED
+
+                </p>
+
+
+                <p
+                    class="
+                        text-3xl
+                        text-white
+                        font-bold
+                        mt-2
+                    ">
+
+                    {{ records_processed }}
+
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <p
+                    class="
+                        text-xs
+                        text-cyan-700
+                        text-right
+                    ">
+
+                    LAST_PIPELINE_RUN
+
+                </p>
+
+
+                <p
+                    class="
+                        text-sm
+                        text-cyan-300
+                        mt-2
+                    ">
+
+                    {{ last_run }}
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         TERMINAL
+    ======================================================= -->
+
+    <div
+        class="
+            mt-8
+            bg-gray-950
+            border
+            border-gray-800
+            rounded
+            p-5
+            text-xs
+            space-y-2
+            text-cyan-300
+        ">
+
+
+        <p>
+
+            &gt; INITIALIZING DATAHUB CORE... [OK]
+
+        </p>
+
+
+        <p>
+
+            &gt; CONNECTING TO AMAZON S3... [OK]
+
+        </p>
+
+
+        <p>
+
+            &gt; VALIDATING DATA SOURCE... [OK]
+
+        </p>
+
+
+        <p>
+
+            &gt; INITIALIZING ETL PIPELINE... [OK]
+
+        </p>
+
+
+        <p>
+
+            &gt; CHECKING AWS ENVIRONMENT... [OK]
+
+        </p>
+
+
+        <p>
+
+            &gt; STARTING FLASK APPLICATION... [OK]
+
+        </p>
+
+
+        <p class="text-green-400">
+
+            &gt;&gt;&gt; DATA PLATFORM READY.
+
+        </p>
+
+    </div>
 
 </div>
 
 
-<div
-class="text-green-400
-       text-3xl md:text-5xl
-       font-black">
-
-ONLINE
-
-</div>
-
-</div>
-
-
-<p
-class="text-cyan-500
-       text-lg
-       leading-relaxed">
-
-/// DATA PLATFORM NODE OPERATIONAL
-
-</p>
-
-
-<p class="mt-3 text-cyan-700">
-
-Python Flask application successfully
-deployed through AWS Elastic Beanstalk.
-
-</p>
-
-
-<p class="mt-2 text-white">
-
-ENVIRONMENT:
-<span class="text-cyan-400">
-{{ env_name }}
-</span>
-
-</p>
-
-
-<!-- ETL STATUS -->
-
-<div
-class="mt-8
-       grid grid-cols-1
-       md:grid-cols-3
-       gap-4">
-
-
-<div
-class="bg-cyan-950/40
-       border border-cyan-900
-       rounded
-       p-5">
-
-<p class="text-xs text-cyan-700">
-ETL_PIPELINE
-</p>
-
-<p
-class="text-2xl
-       text-green-400
-       font-bold mt-2">
-
-{{ etl_status }}
-
-</p>
-
-</div>
-
-
-<div
-class="bg-cyan-950/40
-       border border-cyan-900
-       rounded
-       p-5">
-
-<p class="text-xs text-cyan-700">
-RECORDS_PROCESSED
-</p>
-
-<p
-class="text-2xl
-       text-white
-       font-bold mt-2">
-
-{{ records_processed }}
-
-</p>
-
-</div>
-
-
-<div
-class="bg-cyan-950/40
-       border border-cyan-900
-       rounded
-       p-5">
-
-<p class="text-xs text-cyan-700">
-LAST_ETL_RUN
-</p>
-
-<p
-class="text-sm
-       text-white
-       font-bold mt-3">
-
-{{ last_etl_run }}
-
-</p>
-
-</div>
-
-</div>
-
-
-<!-- TERMINAL -->
-
-<div
-class="mt-8
-       bg-gray-950
-       border border-gray-800
-       rounded
-       p-5
-       text-xs
-       space-y-2
-       text-cyan-300">
-
-
-<p>
-&gt; INITIALIZING DATAFLOW CORE... [OK]
-</p>
-
-<p>
-&gt; CONNECTING TO AWS ENVIRONMENT... [OK]
-</p>
-
-<p>
-&gt; VALIDATING FLASK APPLICATION... [OK]
-</p>
-
-<p>
-&gt; INITIALIZING ETL PIPELINE... [OK]
-</p>
-
-<p>
-&gt; CHECKING DATA PIPELINE STATUS... [OK]
-</p>
-
-<p>
-&gt; VERIFYING APPLICATION HEALTH... [OK]
-</p>
-
-<p class="text-green-400">
-
-&gt;&gt;&gt; DATA PLATFORM READY.
-
-</p>
-
-</div>
-
-</div>
-
-
-<!-- =====================================================
+<!-- ==========================================================
      RIGHT PANEL
-===================================================== -->
+=========================================================== -->
 
 <div
-class="bg-black
-       border border-cyan-900
-       rounded-lg
-       p-6
-       flex flex-col
-       justify-between">
+    class="
+        bg-black
+        border
+        border-cyan-900
+        p-6
+        rounded-lg
+        shadow-inner
+        flex
+        flex-col
+        justify-between
+    ">
 
 
 <div>
 
 
-<h2
-class="text-xl
-       font-bold
-       text-cyan-200
-       border-b
-       border-cyan-900
-       pb-3 mb-5">
+    <h2
+        class="
+            text-xl
+            font-bold
+            text-cyan-200
+            uppercase
+            border-b
+            border-cyan-900
+            pb-3
+            mb-5
+        ">
 
-SYSTEM_STATS
+        SYSTEM_STATS
 
-</h2>
+    </h2>
 
 
-<!-- SERVER TIME -->
+    <!-- SERVER TIME -->
+
+    <div
+        class="
+            bg-cyan-950/40
+            p-4
+            rounded
+            border
+            border-cyan-900
+            mb-4
+        ">
+
+        <p
+            class="
+                text-xs
+                text-cyan-600
+            ">
+
+            SERVER_TIME_UTC
+
+        </p>
+
+
+        <p
+            id="server-time"
+            class="
+                text-lg
+                text-white
+                font-bold
+                mt-2
+            ">
+
+            {{ current_time }}
+
+        </p>
+
+    </div>
+
+
+    <!-- ENVIRONMENT HEALTH -->
+
+    <div
+        class="
+            bg-cyan-950/40
+            p-4
+            rounded
+            border
+            border-cyan-900
+            mb-4
+        ">
+
+        <p
+            class="
+                text-xs
+                text-cyan-600
+            ">
+
+            ENVIRONMENT_HEALTH
+
+        </p>
+
+
+        <p
+            class="
+                text-green-400
+                font-bold
+                mt-2
+                text-lg
+                flex
+                items-center
+                space-x-2
+            ">
+
+
+            <span
+                class="
+                    relative
+                    flex
+                    h-3
+                    w-3
+                ">
+
+                <span
+                    class="
+                        animate-ping
+                        absolute
+                        inline-flex
+                        h-full
+                        w-full
+                        rounded-full
+                        bg-green-400
+                        opacity-75
+                    ">
+                </span>
+
+
+                <span
+                    class="
+                        relative
+                        inline-flex
+                        rounded-full
+                        h-3
+                        w-3
+                        bg-green-500
+                    ">
+                </span>
+
+            </span>
+
+
+            <span>
+
+                NOMINAL
+
+            </span>
+
+        </p>
+
+    </div>
+
+
+    <!-- PYTHON VERSION -->
+
+    <div
+        class="
+            bg-cyan-950/40
+            p-4
+            rounded
+            border
+            border-cyan-900
+        ">
+
+        <p
+            class="
+                text-xs
+                text-cyan-600
+            ">
+
+            PYTHON_RUNTIME
+
+        </p>
+
+
+        <p
+            class="
+                text-lg
+                text-white
+                font-bold
+                mt-2
+            ">
+
+            {{ python_version }}
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     ACTION BUTTONS
+======================================================= -->
 
 <div
-class="bg-cyan-950/40
-       border border-cyan-900
-       rounded
-       p-4 mb-4">
-
-<p class="text-xs text-cyan-700">
-
-SERVER_TIME_UTC
-
-</p>
-
-<p
-id="server-time"
-class="text-lg
-       text-white
-       font-bold mt-2">
-
-{{ current_time }}
-
-</p>
-
-</div>
+    class="
+        space-y-3
+        pt-6
+        border-t
+        border-cyan-900
+        mt-6
+    ">
 
 
-<!-- ENVIRONMENT -->
+    <a
+        href="/health"
+        class="
+            block
+            w-full
+            text-center
+            px-6
+            py-3
+            rounded
+            bg-cyan-900
+            hover:bg-cyan-800
+            text-white
+            font-bold
+            text-sm
+            uppercase
+            tracking-wider
+        ">
 
-<div
-class="bg-cyan-950/40
-       border border-cyan-900
-       rounded
-       p-4 mb-4">
+        RUN HEALTH CHECK
 
-<p class="text-xs text-cyan-700">
-
-EB_ENVIRONMENT
-
-</p>
-
-<p
-class="text-lg
-       text-white
-       font-bold mt-2">
-
-{{ env_name }}
-
-</p>
-
-</div>
+    </a>
 
 
-<!-- PYTHON -->
+    <a
+        href="/api/status"
+        class="
+            block
+            w-full
+            text-center
+            px-6
+            py-3
+            rounded
+            bg-gray-900
+            hover:bg-gray-800
+            text-cyan-300
+            font-bold
+            text-sm
+            border
+            border-gray-700
+        ">
 
-<div
-class="bg-cyan-950/40
-       border border-cyan-900
-       rounded
-       p-4">
+        VIEW API STATUS
 
-<p class="text-xs text-cyan-700">
-
-PYTHON_RUNTIME
-
-</p>
-
-<p
-class="text-lg
-       text-white
-       font-bold mt-2">
-
-{{ python_version }}
-
-</p>
-
-</div>
-
-</div>
+    </a>
 
 
-<!-- BUTTONS -->
+    <a
+        href="{{ github_url }}"
+        target="_blank"
+        class="
+            block
+            w-full
+            text-center
+            px-6
+            py-3
+            rounded
+            bg-gray-900
+            hover:bg-gray-800
+            text-cyan-300
+            font-bold
+            text-sm
+            border
+            border-gray-700
+        ">
 
-<div
-class="space-y-3
-       pt-6
-       border-t
-       border-cyan-900
-       mt-6">
+        SOURCE CODE
 
-
-<a
-href="/health"
-class="block
-       text-center
-       px-5 py-3
-       rounded
-       bg-cyan-900
-       hover:bg-cyan-800
-       text-white
-       font-bold
-       text-sm">
-
-RUN HEALTH CHECK
-
-</a>
-
-
-<a
-href="/api/status"
-class="block
-       text-center
-       px-5 py-3
-       rounded
-       bg-gray-900
-       hover:bg-gray-800
-       text-cyan-300
-       border border-gray-700
-       font-bold
-       text-sm">
-
-API STATUS
-
-</a>
-
-
-<a
-href="{{ github_url }}"
-target="_blank"
-class="block
-       text-center
-       px-5 py-3
-       rounded
-       bg-gray-900
-       hover:bg-gray-800
-       text-cyan-300
-       border border-gray-700
-       font-bold
-       text-sm">
-
-SOURCE CODE
-
-</a>
+    </a>
 
 </div>
 
+
 </div>
+
 
 </div>
 
 </main>
 
 
-<!-- =====================================================
+<!-- ==========================================================
      FOOTER
-===================================================== -->
+=========================================================== -->
 
 <footer
-class="relative z-20
-       border-t border-cyan-950
-       py-4
-       text-center
-       text-xs
-       text-cyan-800">
+    class="
+        relative
+        z-20
+        py-4
+        text-center
+        text-xs
+        text-cyan-900
+        border-t
+        border-cyan-950
+        w-full
+        bg-black/50
+    ">
 
-[DATAFLOW_CORE_RUNNING]
->>
-AWS ELASTIC BEANSTALK
->>
-PYTHON / FLASK
->>
-ETL READY
+    [DATAHUB_CORE_RUNNING]
+    >>
+    AWS ELASTIC BEANSTALK
+    >>
+    FLASK
+    >>
+    ETL READY
 
 </footer>
 
 
 </body>
+
 </html>
 """
 
 
-# =========================================================
-# ROUTES
-# =========================================================
+# ============================================================
+# HOME PAGE
+# ============================================================
 
 @application.route("/")
 def home():
@@ -625,23 +1027,28 @@ def home():
 
         github_url=GITHUB_REPO_URL,
 
-        env_name=EB_ENVIRONMENT,
+        env_name=ENV_NAME,
 
         aws_region=AWS_REGION,
+
+        data_source=DATA_SOURCE,
+
+        target_system=TARGET_SYSTEM,
 
         etl_status=ETL_STATUS,
 
         records_processed=f"{RECORDS_PROCESSED:,}",
 
-        last_etl_run=LAST_ETL_RUN,
+        last_run=LAST_RUN,
 
         python_version=platform.python_version()
+
     )
 
 
-# =========================================================
+# ============================================================
 # HEALTH CHECK
-# =========================================================
+# ============================================================
 
 @application.route("/health")
 def health_check():
@@ -654,13 +1061,16 @@ def health_check():
             APPLICATION_NAME,
 
         "service":
-            "flask",
+            "Flask",
 
         "environment":
-            EB_ENVIRONMENT,
+            ENV_NAME,
 
         "aws_region":
             AWS_REGION,
+
+        "etl_status":
+            ETL_STATUS,
 
         "timestamp_utc":
             datetime.utcnow().isoformat(),
@@ -671,9 +1081,9 @@ def health_check():
     }), 200
 
 
-# =========================================================
+# ============================================================
 # API STATUS
-# =========================================================
+# ============================================================
 
 @application.route("/api/status")
 def api_status():
@@ -689,6 +1099,12 @@ def api_status():
         "status":
             "RUNNING",
 
+        "data_source":
+            DATA_SOURCE,
+
+        "target_system":
+            TARGET_SYSTEM,
+
         "etl_pipeline":
             ETL_STATUS,
 
@@ -696,77 +1112,30 @@ def api_status():
             RECORDS_PROCESSED,
 
         "last_etl_run":
-            LAST_ETL_RUN,
+            LAST_RUN,
 
         "environment":
-            EB_ENVIRONMENT,
+            ENV_NAME,
 
-        "region":
+        "aws_region":
             AWS_REGION
 
     }), 200
 
 
-# =========================================================
+# ============================================================
 # LOCAL DEVELOPMENT
-# =========================================================
+# ============================================================
 
 if __name__ == "__main__":
 
     application.run(
+
         host="0.0.0.0",
+
         port=5000,
+
         debug=False
+
     )
-```
-
-### `requirements.txt`
-
-```text
-Flask==3.1.2
-gunicorn==23.0.0
-```
-
-### `.ebextensions/python.config`
-
-```yaml
-option_settings:
-  aws:elasticbeanstalk:container:python:
-    WSGIPath: application:application
-```
-
-### Project structure
-
-```text
-dataflow-core/
-│
-├── application.py
-│
-├── requirements.txt
-│
-└── .ebextensions/
-    │
-    └── python.config
-```
-
-### Deploy to Elastic Beanstalk
-
-From the project directory:
-
-```bash
-eb init
-```
-
-Select your AWS region, then Python platform.
-
-Create the environment:
-
-```bash
-eb create dataflow-core-env
-```
-
-Deploy:
-
-```bash
-eb d
 ```
